@@ -111,9 +111,11 @@
     grid.innerHTML = data.map(c => `
 
       <div class="car-card"
-           data-type="${c.kode_type}"
-           data-status="${c.status}"
-           data-price="${c.harga}">
+     data-type="${c.kode_type}"
+     data-status="${c.status}"
+     data-price="${c.harga}"
+     onclick="lihatDetail(${c.id_mobil})"
+     style="cursor:pointer;">
 
         <div class="car-img-wrap">
 
@@ -218,6 +220,110 @@ function sewaMobil(id){
         window.location.href = "<?= base_url('customer/rental/') ?>" + id;
 
     }
+}
+/* ===================== MODAL DETAIL ===================== */
+function lihatDetail(id) {
+  // Reset isi modal
+  document.getElementById('modalMobilTitle').innerText = 'Detail Mobil';
+  document.getElementById('modalMobilBody').innerHTML = `
+    <div class="text-center py-5">
+      <div class="spinner-border" style="color:var(--accent)"></div>
+    </div>
+  `;
+
+  // Buka modal
+  const modal = new bootstrap.Modal(document.getElementById('modalDetailMobil'));
+  modal.show();
+
+  // Fetch data dari controller
+  fetch(`<?= base_url('customer/mobil/detail_mobil/') ?>` + id)
+    .then(res => res.json())
+    .then(m => {
+      document.getElementById('modalMobilTitle').innerText = m.merk;
+
+      const hargaFormat = parseInt(m.harga).toLocaleString('id-ID');
+      const statusAvail = m.status == 1;
+
+      document.getElementById('modalMobilBody').innerHTML = `
+        <div class="row g-4">
+
+          <!-- Foto -->
+          <div class="col-md-5 text-center">
+            <img src="<?= base_url('assets/upload/') ?>${m.gambar}"
+                 class="img-fluid w-100"
+                 style="border-radius:14px; max-height:260px; object-fit:cover;">
+            <div class="d-flex gap-2 justify-content-center mt-3 flex-wrap">
+              <span style="background:var(--linen); color:var(--clay); padding:5px 14px; border-radius:20px; font-size:.8rem; font-weight:600;">
+                ${m.kode_type}
+              </span>
+              <span style="background:${statusAvail ? '#e8f5e9' : '#fbe9e7'}; color:${statusAvail ? '#388e3c' : '#d84315'}; padding:5px 14px; border-radius:20px; font-size:.8rem; font-weight:600;">
+                ${statusAvail ? 'Tersedia' : 'Tidak Tersedia'}
+              </span>
+            </div>
+          </div>
+
+          <!-- Info -->
+          <div class="col-md-7">
+
+            <p class="text-muted mb-3" style="font-size:.9rem;">${m.warna} · ${m.tahun}</p>
+
+            <div class="row g-3 mb-3">
+              <div class="col-6">
+                <small class="text-muted d-block mb-1">Plat Nomor</small>
+                <span style="background:var(--linen); color:#555; padding:5px 12px; border-radius:8px; font-size:.85rem; font-weight:600;">
+                  ${m.no_plat}
+                </span>
+              </div>
+              <div class="col-6">
+                <small class="text-muted d-block mb-1">Tipe</small>
+                <strong>${m.nama_type ?? m.kode_type}</strong>
+              </div>
+              <div class="col-6">
+                <small class="text-muted d-block mb-1">Kapasitas</small>
+                <strong>${m.kapasitas ? m.kapasitas + ' Penumpang' : '-'}</strong>
+              </div>
+              <div class="col-6">
+                <small class="text-muted d-block mb-1">Transmisi</small>
+                <strong>${m.transmisi ?? '-'}</strong>
+              </div>
+              <div class="col-6">
+                <small class="text-muted d-block mb-1">Bahan Bakar</small>
+                <strong>${m.bahan_bakar ?? '-'}</strong>
+              </div>
+            </div>
+
+            ${m.deskripsi ? `
+            <div class="mb-3">
+              <small class="text-muted d-block mb-1">Deskripsi</small>
+              <p style="font-size:.88rem; color:#555; margin:0;">${m.deskripsi}</p>
+            </div>` : ''}
+
+            <hr>
+
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+              <div>
+                <small class="text-muted">Harga per hari</small>
+                <div style="font-size:1.5rem; font-weight:700; color:var(--accent);">
+                  Rp ${hargaFormat}
+                </div>
+              </div>
+              ${statusAvail
+                ? `<button class="btn-sewa" onclick="sewaMobil(${m.id_mobil})">
+                     Sewa Sekarang
+                   </button>`
+                : `<button class="btn-sewa" disabled>Tidak Tersedia</button>`
+              }
+            </div>
+
+          </div>
+        </div>
+      `;
+    })
+    .catch(() => {
+      document.getElementById('modalMobilBody').innerHTML = `
+        <p class="text-danger text-center py-4">Gagal memuat data mobil.</p>
+      `;
+    });
 }
 
   /* ===================== FILTER ===================== */

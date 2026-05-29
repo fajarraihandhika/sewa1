@@ -17,8 +17,8 @@
         <li class="nav-item"><a class="nav-link" href="#kontak">Kontak</a></li>
       </ul>
       <div class="d-flex align-items-center gap-2 mt-3 mt-lg-0">
-        <a href="#" class="btn-nav-login">Login</a>
-        <a href="<?php echo base_url('register') ?>" class="btn-nav-daftar">Daftar</a>
+        <a href="<?php echo base_url('auth/login') ?>" class="btn-nav-login">Login</a>
+        <a href="<?php echo base_url('auth/register') ?>" class="btn-nav-daftar">Daftar</a>
       </div>
     </div>
   </div>
@@ -290,4 +290,24 @@
       </div>
     </div>
   </div>
+
+  <!-- ==================== MODAL DETAIL MOBIL ==================== -->
+<div class="modal fade" id="modalDetailMobil" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content" style="border-radius:20px; border:none; overflow:hidden;">
+      
+      <div class="modal-header border-0 pb-0 px-4 pt-4">
+        <h5 class="modal-title fw-bold" id="modalMobilTitle">Detail Mobil</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body px-4 pb-4" id="modalMobilBody">
+        <div class="text-center py-5">
+          <div class="spinner-border" style="color:var(--accent)"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
 </section>

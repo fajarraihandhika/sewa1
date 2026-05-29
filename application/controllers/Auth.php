@@ -111,7 +111,7 @@ class Auth extends CI_Controller {
     // ================= LOGIN PAGE =================
 public function login()
 {
-    $this->load->view('login');
+    $this->load->view('auth/login');
 }
 
 
@@ -165,7 +165,7 @@ public function login_process()
     }
     else
     {
-        $redirect = base_url('/');
+        $redirect = base_url('customer/dashboard');
     }
     
     echo json_encode([
