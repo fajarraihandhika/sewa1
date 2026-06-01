@@ -208,7 +208,7 @@
     <!-- Alert Profil Belum Lengkap -->
     <?php
       $profil_lengkap = !empty($customer) && !empty($customer->id_number) && !empty($customer->nomor_sim);
-      $is_verified    = !empty($customer) && $customer->is_verified == 1;
+      $is_verified    = !empty($customer) && $customer->is_verified == 'verified';
     ?>
     <?php if (empty($customer) || !$profil_lengkap): ?>
     <div class="alert-profil">
@@ -303,7 +303,7 @@
     <!-- Quick Actions -->
     <div class="dash-section-title"><i class="fas fa-bolt"></i> Aksi Cepat</div>
     <div class="quick-actions">
-      <a href="<?= base_url('customer/mobil') ?>"
+      <a href="<?= base_url('customer/mobil/index') ?>"
          class="quick-btn <?= (!$is_verified) ? 'disabled' : '' ?>"
          <?= (!$is_verified) ? 'style="opacity:.5;pointer-events:none;" title="Profil belum terverifikasi"' : '' ?>>
         <div class="q-icon" style="background:rgba(212,134,106,0.12); color:var(--accent);">

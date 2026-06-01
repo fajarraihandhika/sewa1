@@ -235,7 +235,7 @@
 
                 <li><a class="nav-link" href="<?php echo base_url('admin/data_supir') ?>"><i class="fas fa-user"></i> <span>Data Sopir</span></a></li>
 
-                <li><a class="nav-link" href="<?php echo base_url('admin/customer') ?>"><i class="fas fa-user"></i> <span>Data Pelanggan</span></a></li>
+                <li><a class="nav-link" href="<?php echo base_url('admin/Customer') ?>"><i class="fas fa-user"></i> <span>Data Pelanggan</span></a></li>
 
                 <li><a class="nav-link" href="<?php echo base_url('admin/transaksi') ?>"><i class="fas fa-random"></i> <span>Kelola Transaksi</span></a></li>
 

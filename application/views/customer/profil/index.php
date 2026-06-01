@@ -217,7 +217,7 @@
             <div class="avatar-section">
               <div class="avatar-big" id="avatarPreview">
                 <?php if (!empty($customer->foto_profil)): ?>
-                  <img src="<?= base_url('assets/upload/'.$customer->foto_profil) ?>" id="imgAvatarPreview"/>
+                  <img src="<?= base_url('assets/upload/profil/'.$customer->foto_profil) ?>" id="imgAvatarPreview"/>
                 <?php else: ?>
                   <span id="avatarInitial"><?= strtoupper(substr($this->session->userdata('nama_lengkap'), 0, 1)) ?></span>
                 <?php endif; ?>
@@ -250,8 +250,9 @@
               <div class="col-md-6">
                 <div class="form-group-dash">
                   <label class="form-label-dash">Tanggal Lahir</label>
-                  <input type="date" name="tgl_lahir" class="form-control-dash"
-                         value="<?= !empty($customer->tgl_lahir) ? $customer->tgl_lahir : '' ?>"/>
+                  <input type="date" name="tgl_lahir" 
+                      value="<?= ($customer->tgl_lahir && $customer->tgl_lahir != '0000-00-00') ? $customer->tgl_lahir : '' ?>">
+
                 </div>
               </div>
               <div class="col-md-6">

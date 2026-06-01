@@ -45,7 +45,7 @@ class Profil extends CI_Controller {
         $data_user = [
             'nama_lengkap' => $this->input->post('nama_lengkap'),
             'no_hp'        => $this->input->post('no_hp'),
-            'updated_at'   => date('Y-m-d H:i:s'),
+
         ];
         $this->rental_model->update_user($id_user, $data_user);
 
@@ -102,7 +102,7 @@ class Profil extends CI_Controller {
             }
         }
         if ($perlu_reverifikasi) {
-            $data_customer['is_verified'] = 0;
+            $data_customer['is_verified'] = 'pending';
         }
 
         $this->rental_model->simpan_profil($id_user, $data_customer);
@@ -114,25 +114,41 @@ class Profil extends CI_Controller {
     }
 
     /* ==================== HELPER UPLOAD ==================== */
-    private function _upload_foto($field, $prefix = '')
-    {
-        $config = [
-            'upload_path'   => './assets/upload/',
-            'allowed_types' => 'jpg|jpeg|png|webp',
-            'max_size'      => 2048,
-            'file_name'     => $prefix . $this->session->userdata('id_user') . '_' . time(),
-            'overwrite'     => TRUE,
-        ];
-
-        $this->upload->initialize($config);
-
-        if (!$this->upload->do_upload($field)) {
-            return ['status' => 'error', 'message' => $this->upload->display_errors('', '')];
-        }
-
-        return [
-            'status'     => 'success',
-            'nama_file'  => $this->upload->data('file_name'),
-        ];
+   private function _upload_foto($field, $prefix = '')
+{
+    // Tentukan subfolder berdasarkan prefix
+    if (strpos($prefix, 'ktp') !== false) {
+        $subfolder = 'ktp';
+    } elseif (strpos($prefix, 'sim') !== false) {
+        $subfolder = 'sim';
+    } else {
+        $subfolder = 'profil';
     }
+
+    $upload_path = './assets/upload/' . $subfolder;
+
+    // Buat folder otomatis jika belum ada
+    if (!is_dir($upload_path)) {
+        mkdir($upload_path, 0755, true);
+    }
+
+    $config = [
+        'upload_path'   => $upload_path,
+        'allowed_types' => 'jpg|jpeg|png|webp',
+        'max_size'      => 2048,
+        'file_name'     => $prefix . $this->session->userdata('id_user') . '_' . time(),
+        'overwrite'     => TRUE,
+    ];
+
+    $this->upload->initialize($config);
+
+    if (!$this->upload->do_upload($field)) {
+        return ['status' => 'error', 'message' => $this->upload->display_errors('', '')];
+    }
+
+    return [
+        'status'    => 'success',
+        'nama_file' => $subfolder . '/' . $this->upload->data('file_name'), // ← include subfolder
+    ];
+}
 }

@@ -25,7 +25,7 @@ class Mobil extends CI_Controller {
 
         // Cek profil & verifikasi
         $profil_lengkap = !empty($customer) && !empty($customer->id_number) && !empty($customer->nomor_sim);
-        $is_verified    = !empty($customer) && $customer->is_verified == 1;
+        $is_verified    = !empty($customer) && $customer->is_verified == 'verified';
 
         if (!$profil_lengkap || !$is_verified) {
             redirect('customer/profil');
