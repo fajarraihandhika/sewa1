@@ -31,15 +31,15 @@ class Dashboard extends CI_Controller {
         $total_sewa = $this->db->count_all_results('transaksi');
 
         $this->db->where('id_customer', $id_user);
-        $this->db->where('status_rental', 1);
+        $this->db->where('status_rental', 'aktif');
         $sewa_aktif = $this->db->count_all_results('transaksi');
 
         $this->db->where('id_customer', $id_user);
-        $this->db->where('status_rental', 2);
+        $this->db->where('status_rental', 'selesai');
         $sewa_selesai = $this->db->count_all_results('transaksi');
 
         $this->db->where('id_customer', $id_user);
-        $this->db->where('status_rental', 0);
+        $this->db->where('status_rental', 'pending');
         $sewa_pending = $this->db->count_all_results('transaksi');
 
         // Cek apakah pelanggan lama (total sewa > 5)

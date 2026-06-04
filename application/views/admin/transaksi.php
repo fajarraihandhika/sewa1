@@ -1,11 +1,8 @@
 <div class="main-content">
-    <section class="section">
-
-```
-    <div class="section-header">
-        <h1>Data Transaksi</h1>
-    </div>
-
+        <section class="section">
+          <div class="section-header">
+            <h1>Data Transaksi</h1>
+          </div>
     <?php echo $this->session->flashdata('pesan') ?>
 
     <div class="section-body">

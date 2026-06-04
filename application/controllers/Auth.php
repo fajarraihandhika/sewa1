@@ -173,4 +173,20 @@ public function login_process()
         'redirect' => $redirect
     ]);
 }
+// ================= LOGOUT =================
+public function logout()
+{
+    $this->session->unset_userdata([
+        'id_user',
+        'nama_lengkap',
+        'email',
+        'role',
+        'logged_in'
+    ]);
+
+    $this->session->sess_destroy();
+
+    redirect('auth/login');
+}
+
 }

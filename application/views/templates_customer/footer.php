@@ -59,22 +59,22 @@
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
 <script>
 
   /* ===================== DATA DARI DATABASE ===================== */
   const carsData = <?= json_encode($mobil); ?>;
-
   console.log(carsData);
 
   /* ===================== BADGE TYPE ===================== */
   const typeBadgeMap = {
-   "SUV"      : "badge-suv",
-        "MPV"      : "badge-mpv",
-        "SDN"      : "badge-sedan",
-        "CITY"     : "badge-city",
-        "PREMIUM"  : "badge-premium",
-        "TRUK"     : "badge-truck",
-        "MINIBUS"  : "badge-minibus"
+    "SUV"     : "badge-suv",
+    "MPV"     : "badge-mpv",
+    "SDN"     : "badge-sedan",
+    "CITY"    : "badge-city",
+    "PREMIUM" : "badge-premium",
+    "TRUK"    : "badge-truck",
+    "MINIBUS" : "badge-minibus"
   };
 
   /* ===================== FORMAT HARGA ===================== */
@@ -82,7 +82,6 @@
   {
     return "Rp " + parseInt(p).toLocaleString("id-ID");
   }
-  
 
   /* ===================== RENDER MOBIL ===================== */
   function renderCars(data)
@@ -92,239 +91,167 @@
     if (!data.length)
     {
       grid.innerHTML = `
-      
-      <div class="no-cars-msg">
-      
-        <i class="fas fa-car-burst"
-           style="font-size:2rem;margin-bottom:12px;display:block;color:var(--clay)">
-        </i>
-
-        Tidak ada mobil yang sesuai filter.
-
-      </div>
-      
+        <div class="no-cars-msg">
+          <i class="fas fa-car-burst" style="font-size:2rem;margin-bottom:12px;display:block;color:var(--clay)"></i>
+          Tidak ada mobil yang sesuai filter.
+        </div>
       `;
-
       return;
     }
 
     grid.innerHTML = data.map(c => `
-
       <div class="car-card"
-     data-type="${c.kode_type}"
-     data-status="${c.status}"
-     data-price="${c.harga}"
-     onclick="lihatDetail(${c.id_mobil})"
-     style="cursor:pointer;">
+           data-type="${c.kode_type}"
+           data-status="${c.status}"
+           data-price="${c.harga_perhari}"
+           onclick="if(!event.target.closest('.btn-sewa')) lihatDetail(${c.id_mobil})"
+           style="cursor:pointer;">
 
         <div class="car-img-wrap">
-
-          <img src="<?= base_url('assets/upload/') ?>${c.gambar}"
-               alt="${c.merk}"
-               loading="lazy"/>
-
-          <span class="car-type-badge ${typeBadgeMap[c.kode_type]}">
-
+          <img src="<?= base_url('assets/upload/') ?>${c.gambar}" alt="${c.merk}" loading="lazy"/>
+          <span class="car-type-badge ${typeBadgeMap[c.kode_type] || 'badge-dark'}">
             ${c.kode_type}
-
           </span>
-
-          <span class="car-status
-            ${c.status == 1 ? 'status-available' : 'status-rented'}">
-
+          <span class="car-status ${c.status == 1 ? 'status-available' : 'status-rented'}">
             ${c.status == 1 ? 'Tersedia' : 'Tidak Tersedia'}
-
           </span>
-
         </div>
 
         <div class="car-body">
-
-          <div class="car-name">
-
-            ${c.merk}
-
-          </div>
-
-          <div class="car-meta">
-
-            ${c.warna} · ${c.tahun}
-
-          </div>
+          <div class="car-name">${c.merk}</div>
+          <div class="car-meta">${c.warna} · ${c.tahun}</div>
 
           <div class="car-specs">
-
             <div class="car-spec">
-
-              <i class="fas fa-id-card"></i>
-
-              ${c.no_plat}
-
+              <i class="fas fa-users"></i> ${c.kapasitas ? c.kapasitas + ' Kursi' : '-'}
             </div>
-
             <div class="car-spec">
-
-              <i class="fas fa-car"></i>
-
-              ${c.kode_type}
-
+              <i class="fas fa-cogs"></i> ${c.transmisi || '-'}
             </div>
-
+            <div class="car-spec">
+              <i class="fas fa-gas-pump"></i> ${c.bahan_bakar || '-'}
+            </div>
           </div>
 
           <div class="car-footer">
-
             <div>
-
               <div class="car-price">
-
-                ${formatPrice(c.harga)}
-
-                <span>/ hari</span>
-
+                ${formatPrice(c.harga_perhari)} <span>/ hari</span>
               </div>
-
             </div>
-
-            <button 
-    class="btn-sewa"
-    ${c.status == 0 ? 'disabled' : ''}
-    onclick="sewaMobil(${c.id_mobil})"
->
-
-${c.status == 1
-    ? 'Sewa Sekarang'
-    : 'Tidak Tersedia'}
-
-</button>
-
+            <button class="btn-sewa" ${c.status == 0 ? 'disabled' : ''} onclick="sewaMobil(${c.id_mobil})">
+              ${c.status == 1 ? 'Sewa Sekarang' : 'Tidak Tersedia'}
+            </button>
           </div>
-
         </div>
-
       </div>
-
     `).join('');
   }
 
+  /* ===================== PROSES SEWA ===================== */
   const isLogin = <?= $this->session->userdata('id_customer') ? 'true' : 'false' ?>;
 
-function sewaMobil(id){
-    
+  function sewaMobil(id){
     if(!isLogin){
-
         window.location.href = "<?= base_url('auth/login') ?>";
-
     }else{
-
         window.location.href = "<?= base_url('customer/rental/') ?>" + id;
-
     }
-}
-/* ===================== MODAL DETAIL ===================== */
-function lihatDetail(id) {
-  // Reset isi modal
-  document.getElementById('modalMobilTitle').innerText = 'Detail Mobil';
-  document.getElementById('modalMobilBody').innerHTML = `
-    <div class="text-center py-5">
-      <div class="spinner-border" style="color:var(--accent)"></div>
-    </div>
-  `;
+  }
 
-  // Buka modal
-  const modal = new bootstrap.Modal(document.getElementById('modalDetailMobil'));
-  modal.show();
+  /* ===================== MODAL DETAIL ===================== */
+  function lihatDetail(id) {
+    document.getElementById('modalMobilTitle').innerText = 'Detail Mobil';
+    document.getElementById('modalMobilBody').innerHTML = `
+      <div class="text-center py-5">
+        <div class="spinner-border" style="color:var(--accent)"></div>
+      </div>
+    `;
 
-  // Fetch data dari controller
-  fetch(`<?= base_url('customer/mobil/detail_mobil/') ?>` + id)
-    .then(res => res.json())
-    .then(m => {
-      document.getElementById('modalMobilTitle').innerText = m.merk;
+    const modal = new bootstrap.Modal(document.getElementById('modalDetailMobil'));
+    modal.show();
 
-      const hargaFormat = parseInt(m.harga).toLocaleString('id-ID');
-      const statusAvail = m.status == 1;
+    fetch(`<?= base_url('customer/mobil/detail/') ?>` + id)
+      .then(res => res.json())
+      .then(m => {
+        document.getElementById('modalMobilTitle').innerText = m.merk;
+        const hargaFormat = parseInt(m.harga_perhari).toLocaleString('id-ID');
+        const statusAvail = m.status == 1;
 
-      document.getElementById('modalMobilBody').innerHTML = `
-        <div class="row g-4">
-
-          <!-- Foto -->
-          <div class="col-md-5 text-center">
-            <img src="<?= base_url('assets/upload/') ?>${m.gambar}"
-                 class="img-fluid w-100"
-                 style="border-radius:14px; max-height:260px; object-fit:cover;">
-            <div class="d-flex gap-2 justify-content-center mt-3 flex-wrap">
-              <span style="background:var(--linen); color:var(--clay); padding:5px 14px; border-radius:20px; font-size:.8rem; font-weight:600;">
-                ${m.kode_type}
-              </span>
-              <span style="background:${statusAvail ? '#e8f5e9' : '#fbe9e7'}; color:${statusAvail ? '#388e3c' : '#d84315'}; padding:5px 14px; border-radius:20px; font-size:.8rem; font-weight:600;">
-                ${statusAvail ? 'Tersedia' : 'Tidak Tersedia'}
-              </span>
-            </div>
-          </div>
-
-          <!-- Info -->
-          <div class="col-md-7">
-
-            <p class="text-muted mb-3" style="font-size:.9rem;">${m.warna} · ${m.tahun}</p>
-
-            <div class="row g-3 mb-3">
-              <div class="col-6">
-                <small class="text-muted d-block mb-1">Plat Nomor</small>
-                <span style="background:var(--linen); color:#555; padding:5px 12px; border-radius:8px; font-size:.85rem; font-weight:600;">
-                  ${m.no_plat}
+        document.getElementById('modalMobilBody').innerHTML = `
+          <div class="row g-4">
+            <div class="col-md-5 text-center">
+              <img src="<?= base_url('assets/upload/') ?>${m.gambar}"
+                   class="img-fluid w-100"
+                   style="border-radius:14px; max-height:260px; object-fit:cover;">
+              <div class="d-flex gap-2 justify-content-center mt-3 flex-wrap">
+                <span style="background:var(--linen); color:var(--clay); padding:5px 14px; border-radius:20px; font-size:.8rem; font-weight:600;">
+                  ${m.kode_type}
+                </span>
+                <span style="background:${statusAvail ? '#e8f5e9' : '#fbe9e7'}; color:${statusAvail ? '#388e3c' : '#d84315'}; padding:5px 14px; border-radius:20px; font-size:.8rem; font-weight:600;">
+                  ${statusAvail ? 'Tersedia' : 'Tidak Tersedia'}
                 </span>
               </div>
-              <div class="col-6">
-                <small class="text-muted d-block mb-1">Tipe</small>
-                <strong>${m.nama_type ?? m.kode_type}</strong>
-              </div>
-              <div class="col-6">
-                <small class="text-muted d-block mb-1">Kapasitas</small>
-                <strong>${m.kapasitas ? m.kapasitas + ' Penumpang' : '-'}</strong>
-              </div>
-              <div class="col-6">
-                <small class="text-muted d-block mb-1">Transmisi</small>
-                <strong>${m.transmisi ?? '-'}</strong>
-              </div>
-              <div class="col-6">
-                <small class="text-muted d-block mb-1">Bahan Bakar</small>
-                <strong>${m.bahan_bakar ?? '-'}</strong>
-              </div>
             </div>
 
-            ${m.deskripsi ? `
-            <div class="mb-3">
-              <small class="text-muted d-block mb-1">Deskripsi</small>
-              <p style="font-size:.88rem; color:#555; margin:0;">${m.deskripsi}</p>
-            </div>` : ''}
+            <div class="col-md-7">
+              <p class="text-muted mb-3" style="font-size:.9rem;">${m.warna} · ${m.tahun}</p>
 
-            <hr>
-
-            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
-              <div>
-                <small class="text-muted">Harga per hari</small>
-                <div style="font-size:1.5rem; font-weight:700; color:var(--accent);">
-                  Rp ${hargaFormat}
+              <div class="row g-3 mb-3">
+                <div class="col-6">
+                  <small class="text-muted d-block mb-1">Plat Nomor</small>
+                  <span style="background:var(--linen); color:#555; padding:5px 12px; border-radius:8px; font-size:.85rem; font-weight:600;">
+                    ${m.no_plat}
+                  </span>
+                </div>
+                <div class="col-6">
+                  <small class="text-muted d-block mb-1">Tipe</small>
+                  <strong>${m.nama_type ?? m.kode_type}</strong>
+                </div>
+                <div class="col-6">
+                  <small class="text-muted d-block mb-1">Kapasitas</small>
+                  <strong>${m.kapasitas ? m.kapasitas + ' Penumpang' : '-'}</strong>
+                </div>
+                <div class="col-6">
+                  <small class="text-muted d-block mb-1">Transmisi</small>
+                  <strong>${m.transmisi ?? '-'}</strong>
+                </div>
+                <div class="col-6">
+                  <small class="text-muted d-block mb-1">Bahan Bakar</small>
+                  <strong>${m.bahan_bakar ?? '-'}</strong>
                 </div>
               </div>
-              ${statusAvail
-                ? `<button class="btn-sewa" onclick="sewaMobil(${m.id_mobil})">
-                     Sewa Sekarang
-                   </button>`
-                : `<button class="btn-sewa" disabled>Tidak Tersedia</button>`
-              }
-            </div>
 
+              ${m.deskripsi ? `
+              <div class="mb-3">
+                <small class="text-muted d-block mb-1">Deskripsi</small>
+                <p style="font-size:.88rem; color:#555; margin:0;">${m.deskripsi}</p>
+              </div>` : ''}
+
+              <hr>
+
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                  <small class="text-muted">Harga per hari</small>
+                  <div style="font-size:1.5rem; font-weight:700; color:var(--accent);">
+                    Rp ${hargaFormat}
+                  </div>
+                </div>
+                ${statusAvail
+                  ? `<button class="btn-sewa" onclick="sewaMobil(${m.id_mobil})">Sewa Sekarang</button>`
+                  : `<button class="btn-sewa" disabled>Tidak Tersedia</button>`
+                }
+              </div>
+            </div>
           </div>
-        </div>
-      `;
-    })
-    .catch(() => {
-      document.getElementById('modalMobilBody').innerHTML = `
-        <p class="text-danger text-center py-4">Gagal memuat data mobil.</p>
-      `;
-    });
-}
+        `;
+      })
+      .catch(() => {
+        document.getElementById('modalMobilBody').innerHTML = `
+          <p class="text-danger text-center py-4">Gagal memuat data mobil.</p>
+        `;
+      });
+  }
 
   /* ===================== FILTER ===================== */
   function filterCars()
@@ -334,41 +261,23 @@ function lihatDetail(id) {
     const harga  = document.getElementById("filterHarga").value;
 
     const filtered = carsData.filter(c => {
-
-      /* FILTER TYPE */
-      const matchTipe =
-        !tipe ||
-        String(c.kode_type).trim().toLowerCase() ==
-        String(tipe).trim().toLowerCase();
-
-    const matchStatus =
-        !status ||
-        String(c.status) == String(status);
-      /* FILTER HARGA */
+      const matchTipe = !tipe || String(c.kode_type).trim().toLowerCase() == String(tipe).trim().toLowerCase();
+      const matchStatus = !status || String(c.status) == String(status);
+      
+      /* Menggunakan kriteria harga_perhari */
       let matchHarga = true;
-
-      if (harga === "low")
-{
-    matchHarga = parseInt(c.harga) <= 500000;
-}
-
-else if (harga === "mid")
-{
-    matchHarga =
-        parseInt(c.harga) > 500000 &&
-        parseInt(c.harga) <= 1000000;
-}
-
-else if (harga === "high")
-{
-    matchHarga = parseInt(c.harga) > 1000000;
-}
+      if (harga === "low") {
+        matchHarga = parseInt(c.harga_perhari) <= 500000;
+      } else if (harga === "mid") {
+        matchHarga = parseInt(c.harga_perhari) > 500000 && parseInt(c.harga_perhari) <= 1000000;
+      } else if (harga === "high") {
+        matchHarga = parseInt(c.harga_perhari) > 1000000;
+      }
 
       return matchTipe && matchStatus && matchHarga;
     });
 
     renderCars(filtered);
-
     renderChips(tipe, status, harga);
   }
 
@@ -376,64 +285,24 @@ else if (harga === "high")
   function renderChips(tipe, status, harga)
   {
     const wrap = document.getElementById("activeFilters");
-
     wrap.innerHTML = '';
 
     const labelMap = {
-      low  : "< Rp 400K",
-      mid  : "Rp 400K - 700K",
-      high : "> Rp 700K"
+      low  : "<= Rp 500K",
+      mid  : "Rp 500K - 1M",
+      high : "> Rp 1M"
     };
 
-    if (tipe)
-    {
-      wrap.innerHTML += `
-      
-      <span class="filter-chip">
-
-        ${tipe}
-
-        <i class="fas fa-xmark"
-           onclick="clearFilter('filterTipe')">
-        </i>
-
-      </span>
-      
-      `;
+    if (tipe) {
+      wrap.innerHTML += `<span class="filter-chip">${tipe} <i class="fas fa-xmark" onclick="clearFilter('filterTipe')"></i></span>`;
     }
 
-    if (status)
-    {
-      wrap.innerHTML += `
-      
-      <span class="filter-chip">
-
-        ${status == 1 ? 'Tersedia' : 'Tidak Tersedia'}
-
-        <i class="fas fa-xmark"
-           onclick="clearFilter('filterStatus')">
-        </i>
-
-      </span>
-      
-      `;
+    if (status) {
+      wrap.innerHTML += `<span class="filter-chip">${status == 1 ? 'Tersedia' : 'Tidak Tersedia'} <i class="fas fa-xmark" onclick="clearFilter('filterStatus')"></i></span>`;
     }
 
-    if (harga)
-    {
-      wrap.innerHTML += `
-      
-      <span class="filter-chip">
-
-        ${labelMap[harga]}
-
-        <i class="fas fa-xmark"
-           onclick="clearFilter('filterHarga')">
-        </i>
-
-      </span>
-      
-      `;
+    if (harga) {
+      wrap.innerHTML += `<span class="filter-chip">${labelMap[harga]} <i class="fas fa-xmark" onclick="clearFilter('filterHarga')"></i></span>`;
     }
   }
 
@@ -441,7 +310,6 @@ else if (harga === "high")
   function clearFilter(id)
   {
     document.getElementById(id).value = '';
-
     filterCars();
   }
 
@@ -451,19 +319,13 @@ else if (harga === "high")
     document.getElementById("filterTipe").value = '';
     document.getElementById("filterStatus").value = '';
     document.getElementById("filterHarga").value = '';
-
     filterCars();
   }
 
-  /* ===================== LOAD AWAL ===================== */
-  renderCars(carsData);
-  
-
-
-
   /* ===================== NAVBAR SCROLL ===================== */
   window.addEventListener("scroll", () => {
-    document.getElementById("mainNav").classList.toggle("scrolled", window.scrollY > 30);
+    const mainNav = document.getElementById("mainNav");
+    if(mainNav) mainNav.classList.toggle("scrolled", window.scrollY > 30);
   });
 
   /* ===================== DATE DEFAULTS ===================== */
@@ -477,91 +339,9 @@ else if (harga === "high")
     if (inputs[1]) inputs[1].value = fmt(ntmr);
   })();
 
-  /* ===================== INIT ===================== */
+  /* ===================== INITIAL LOAD ===================== */
   renderCars(carsData);
 
-  // const carsData = [
-  //   { id:1, name:"Toyota Fortuner",  type:"SUV",      price:750000, status:"Tersedia", seats:7, fuel:"Diesel",   img:"https://placehold.co/400x220/EDE4D8/8B6A50?text=Fortuner" },
-  //   { id:2, name:"Honda CR-V",       type:"SUV",      price:680000, status:"Tersedia", seats:5, fuel:"Bensin",   img:"https://placehold.co/400x220/E8DDD0/8B6A50?text=CR-V" },
-  //   { id:3, name:"Toyota Innova",    type:"MPV",      price:450000, status:"Disewa",   seats:7, fuel:"Diesel",   img:"https://placehold.co/400x220/F5EFE6/8B6A50?text=Innova" },
-  //   { id:4, name:"Mitsubishi Xpander",type:"MPV",    price:420000, status:"Tersedia", seats:7, fuel:"Bensin",   img:"https://placehold.co/400x220/EDE4D8/8B6A50?text=Xpander" },
-  // ];
-
-  // const typeBadgeMap = { "SUV":"badge-suv","MPV":"badge-mpv","Sedan":"badge-sedan","City Car":"badge-city" };
-
-  // function formatPrice(p) { return "Rp " + p.toLocaleString("id-ID"); }
-
-  // function renderCars(data) {
-  //   const grid = document.getElementById("carsGrid");
-  //   if (!data.length) {
-  //     grid.innerHTML = `<div class="no-cars-msg"><i class="fas fa-car-burst" style="font-size:2rem;margin-bottom:12px;display:block;color:var(--clay)"></i>Tidak ada mobil yang sesuai filter.</div>`;
-  //     return;
-  //   }
-  //   grid.innerHTML = data.map(c => `
-  //     <div class="car-card" data-type="${c.type}" data-status="${c.status}" data-price="${c.price}">
-  //       <div class="car-img-wrap">
-  //         <img src="${c.img}" alt="${c.name}" loading="lazy"/>
-  //         <span class="car-type-badge ${typeBadgeMap[c.type]}">${c.type}</span>
-  //         <span class="car-status ${c.status==='Tersedia'?'status-available':'status-rented'}">${c.status}</span>
-  //       </div>
-  //       <div class="car-body">
-  //         <div class="car-name">${c.name}</div>
-  //         <div class="car-meta">${c.fuel} · ${c.seats} kursi</div>
-  //         <div class="car-specs">
-  //           <div class="car-spec"><i class="fas fa-users"></i>${c.seats} Orang</div>
-  //           <div class="car-spec"><i class="fas fa-gas-pump"></i>${c.fuel}</div>
-  //           <div class="car-spec"><i class="fas fa-snowflake"></i>AC</div>
-  //         </div>
-  //         <div class="car-footer">
-  //           <div>
-  //             <div class="car-price">${formatPrice(c.price)} <span>/ hari</span></div>
-  //           </div>
-  //           <button class="btn-sewa" ${c.status==='Disewa'?'disabled':''}>
-  //             ${c.status==='Disewa'?'Tidak Tersedia':'Sewa Sekarang'}
-  //           </button>
-  //         </div>
-  //       </div>
-  //     </div>
-  //   `).join('');
-  // }
-
-  // function filterCars() {
-  //   const tipe   = document.getElementById("filterTipe").value;
-  //   const status = document.getElementById("filterStatus").value;
-  //   const harga  = document.getElementById("filterHarga").value;
-
-  //   const filtered = carsData.filter(c => {
-  //     const matchTipe   = !tipe   || c.type === tipe;
-  //     const matchStatus = !status || c.status === status;
-  //     let matchHarga = true;
-  //     if      (harga === "low")  matchHarga = c.price < 400000;
-  //     else if (harga === "mid")  matchHarga = c.price >= 400000 && c.price <= 700000;
-  //     else if (harga === "high") matchHarga = c.price > 700000;
-  //     return matchTipe && matchStatus && matchHarga;
-  //   });
-
-  //   renderCars(filtered);
-  //   renderChips(tipe, status, harga);
-  // }
-
-  // function renderChips(tipe, status, harga) {
-  //   const wrap = document.getElementById("activeFilters");
-  //   wrap.innerHTML = '';
-  //   const labelMap = { low:"< Rp 400K", mid:"Rp 400K–700K", high:"> Rp 700K" };
-  //   if (tipe)   wrap.innerHTML += `<span class="filter-chip">${tipe} <i class="fas fa-xmark" onclick="clearFilter('filterTipe')"></i></span>`;
-  //   if (status) wrap.innerHTML += `<span class="filter-chip">${status} <i class="fas fa-xmark" onclick="clearFilter('filterStatus')"></i></span>`;
-  //   if (harga)  wrap.innerHTML += `<span class="filter-chip">${labelMap[harga]} <i class="fas fa-xmark" onclick="clearFilter('filterHarga')"></i></span>`;
-  // }
-
-  // function clearFilter(id) {
-  //   document.getElementById(id).value = '';
-  //   filterCars();
-  // }
-
-  // function resetFilter() {
-  //   ["filterTipe","filterStatus","filterHarga"].forEach(id => document.getElementById(id).value = '');
-  //   filterCars();
-  // }
 </script>
 </body>
 </html>

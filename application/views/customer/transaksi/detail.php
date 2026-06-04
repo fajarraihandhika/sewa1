@@ -9,7 +9,6 @@
   }
   .back-link:hover { color: var(--accent); }
 
-  /* Layout 2 kolom */
   .detail-grid {
     display: grid;
     grid-template-columns: 1fr 340px;
@@ -18,7 +17,6 @@
   }
   @media(max-width:991px) { .detail-grid { grid-template-columns: 1fr; } }
 
-  /* Card */
   .detail-card {
     background: var(--white);
     border-radius: var(--radius-xl);
@@ -40,20 +38,13 @@
   .detail-card-head i { color: var(--accent); }
   .detail-card-body { padding: 24px; }
 
-  /* Mobil hero */
   .mobil-hero {
     background: linear-gradient(135deg, var(--sand), var(--clay));
     border-radius: var(--radius-lg);
-    padding: 24px;
-    text-align: center;
-    margin-bottom: 20px;
+    padding: 24px; text-align: center; margin-bottom: 20px;
   }
-  .mobil-hero img {
-    width: 70%; max-height: 180px;
-    object-fit: contain;
-  }
+  .mobil-hero img { width: 70%; max-height: 180px; object-fit: contain; }
 
-  /* Info rows */
   .info-row {
     display: flex; justify-content: space-between; align-items: center;
     padding: 12px 0;
@@ -64,7 +55,6 @@
   .info-label { color: var(--text-soft); }
   .info-val   { font-weight: 600; color: var(--text-dark); text-align: right; }
 
-  /* Status */
   .status-big {
     display: inline-flex; align-items: center; gap: 7px;
     font-size: .82rem; font-weight: 600;
@@ -76,7 +66,6 @@
   .sb-2 { background: rgba(184,212,232,.3); color: #4A7FA0; }
   .sb-3 { background: rgba(220,100,100,.15); color: #C05050; }
 
-  /* Total box */
   .total-detail-box {
     background: linear-gradient(135deg, rgba(212,134,106,.1), rgba(212,134,106,.04));
     border: 1.5px solid rgba(212,134,106,.2);
@@ -86,17 +75,13 @@
   .total-detail-label { font-size: .78rem; color: var(--text-soft); margin-bottom: 4px; }
   .total-detail-harga {
     font-family: var(--font-display);
-    font-size: 2rem; font-weight: 700;
-    color: var(--accent);
+    font-size: 2rem; font-weight: 700; color: var(--accent);
   }
 
-  /* Supir card */
   .supir-detail {
     display: flex; align-items: center; gap: 14px;
-    background: var(--sand);
-    border-radius: var(--radius-md);
-    padding: 14px;
-    border: 1px solid var(--clay);
+    background: var(--sand); border-radius: var(--radius-md);
+    padding: 14px; border: 1px solid var(--clay);
   }
   .supir-detail-avatar {
     width: 52px; height: 52px; border-radius: 50%;
@@ -109,17 +94,26 @@
   .supir-detail-name { font-weight: 600; color: var(--text-dark); }
   .supir-detail-info { font-size: .78rem; color: var(--text-soft); margin-top: 2px; }
 
-  /* Timeline status */
+  /* Upgrade badge */
+  .upgrade-banner {
+    background: linear-gradient(135deg, rgba(122,200,140,.15), rgba(122,200,140,.05));
+    border: 1.5px solid rgba(122,200,140,.3);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: .82rem; color: #3A8A50;
+  }
+  .upgrade-banner i { margin-top: 2px; flex-shrink: 0; }
+
   .timeline { position: relative; padding-left: 24px; }
   .timeline::before {
-    content: '';
-    position: absolute; left: 8px; top: 0; bottom: 0;
+    content: ''; position: absolute; left: 8px; top: 0; bottom: 0;
     width: 2px; background: var(--clay);
   }
   .timeline-item { position: relative; margin-bottom: 20px; }
   .timeline-item::before {
-    content: '';
-    position: absolute; left: -20px; top: 4px;
+    content: ''; position: absolute; left: -20px; top: 4px;
     width: 12px; height: 12px; border-radius: 50%;
     background: var(--clay); border: 2px solid var(--white);
     box-shadow: 0 0 0 2px var(--clay);
@@ -132,13 +126,26 @@
 <?php
   $t = $transaksi;
   $status_map = [
-    0 => ['label'=>'Pending',    'class'=>'sb-0'],
-    1 => ['label'=>'Aktif',      'class'=>'sb-1'],
-    2 => ['label'=>'Selesai',    'class'=>'sb-2'],
-    3 => ['label'=>'Dibatalkan', 'class'=>'sb-3'],
+    'pending' => ['label'=>'Pending',    'class'=>'sb-0'],
+    'aktif'   => ['label'=>'Aktif',      'class'=>'sb-1'],
+    'selesai' => ['label'=>'Selesai',    'class'=>'sb-2'],
+    'ditolak' => ['label'=>'Dibatalkan', 'class'=>'sb-3'],
   ];
   $s = $status_map[$t->status_rental] ?? ['label'=>'-','class'=>''];
-  $hari = ceil((strtotime($t->tanggal_kembali) - strtotime($t->tanggal_rental)) / 86400);
+
+  // Label durasi
+  $durasi_label = [
+    'jam'    => 'Jam',
+    'hari'   => 'Hari',
+    'minggu' => 'Minggu',
+    'bulan'  => 'Bulan',
+  ];
+  $satuan = $durasi_label[$t->jenis_durasi] ?? $t->jenis_durasi;
+
+  // Format datetime
+  $fmt_tgl = function($dt) {
+    return $dt ? date('d M Y, H:i', strtotime($dt)) : '-';
+  };
 ?>
 
 <div class="detail-wrap">
@@ -151,7 +158,9 @@
     <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
       <div>
         <span style="font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);">Detail Transaksi</span>
-        <h2 style="font-family:var(--font-display);font-size:1.5rem;font-weight:700;margin:0;">#TRX-<?= str_pad($t->id_rental, 5, '0', STR_PAD_LEFT) ?></h2>
+        <h2 style="font-family:var(--font-display);font-size:1.5rem;font-weight:700;margin:0;">
+          #TRX-<?= str_pad($t->id_rental, 5, '0', STR_PAD_LEFT) ?>
+        </h2>
       </div>
       <span class="status-big <?= $s['class'] ?>"><?= $s['label'] ?></span>
     </div>
@@ -167,6 +176,19 @@
             <i class="fas fa-car"></i><h5>Informasi Mobil</h5>
           </div>
           <div class="detail-card-body">
+
+            <?php if ($t->is_upgrade): ?>
+            <div class="upgrade-banner">
+              <i class="fas fa-circle-up"></i>
+              <div>
+                <strong>Upgrade Kendaraan</strong><br>
+                Mobil pilihan Anda (<strong><?= $t->merk_asal ?> · <?= $t->type_asal ?></strong>)
+                tidak tersedia, sehingga kami upgrade ke kendaraan di bawah ini
+                <strong>dengan harga yang sama</strong>.
+              </div>
+            </div>
+            <?php endif; ?>
+
             <div class="mobil-hero">
               <img src="<?= base_url('assets/upload/'.$t->gambar) ?>" alt="<?= $t->merk ?>"/>
             </div>
@@ -182,14 +204,10 @@
               <span class="info-label">Plat Nomor</span>
               <span class="info-val"><?= $t->no_plat ?></span>
             </div>
-            <div class="info-row">
-              <span class="info-label">Harga per Hari</span>
-              <span class="info-val">Rp <?= number_format($t->harga, 0, ',', '.') ?></span>
-            </div>
           </div>
         </div>
 
-        <!-- Supir (jika ada) -->
+        <!-- Supir -->
         <?php if (!empty($t->nama_supir)): ?>
         <div class="detail-card">
           <div class="detail-card-head">
@@ -239,17 +257,37 @@
           </div>
           <div class="detail-card-body">
             <div class="info-row">
-              <span class="info-label">Durasi Sewa</span>
-              <span class="info-val"><?= $hari ?> hari</span>
+              <span class="info-label">Jenis Sewa</span>
+              <span class="info-val"><?= ucfirst($t->jenis_durasi) ?></span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Durasi</span>
+              <span class="info-val"><?= $t->jumlah_durasi ?> <?= $satuan ?></span>
             </div>
             <div class="info-row">
               <span class="info-label">Biaya Mobil</span>
-              <span class="info-val">Rp <?= number_format($t->harga * $hari, 0, ',', '.') ?></span>
+              <span class="info-val">Rp <?= number_format($t->biaya_mobil, 0, ',', '.') ?></span>
             </div>
-            <?php if (!empty($t->nama_supir)): ?>
+            <?php if ($t->biaya_supir > 0): ?>
             <div class="info-row">
               <span class="info-label">Biaya Supir</span>
-              <span class="info-val">Rp <?= number_format(150000 * $hari, 0, ',', '.') ?></span>
+              <span class="info-val">Rp <?= number_format($t->biaya_supir, 0, ',', '.') ?></span>
+            </div>
+            <?php endif; ?>
+            <?php if ($t->is_luar_kota): ?>
+            <div class="info-row">
+              <span class="info-label">Biaya Luar Kota (+20%)</span>
+              <span class="info-val" style="color:var(--accent);">
+                Rp <?= number_format($t->total_harga - $t->biaya_mobil - $t->biaya_supir, 0, ',', '.') ?>
+              </span>
+            </div>
+            <?php endif; ?>
+            <?php if ($t->biaya_tambahan > 0): ?>
+            <div class="info-row">
+              <span class="info-label" style="color:#C05050;">Biaya Keterlambatan</span>
+              <span class="info-val" style="color:#C05050;">
+                Rp <?= number_format($t->biaya_tambahan, 0, ',', '.') ?>
+              </span>
             </div>
             <?php endif; ?>
             <div style="margin-top:16px;">
@@ -270,17 +308,23 @@
           </div>
           <div class="detail-card-body">
             <div class="info-row">
-              <span class="info-label">Tanggal Sewa</span>
-              <span class="info-val"><?= date('d M Y', strtotime($t->tanggal_rental)) ?></span>
+              <span class="info-label">Mulai Sewa</span>
+              <span class="info-val"><?= $fmt_tgl($t->tanggal_rental) ?></span>
             </div>
             <div class="info-row">
-              <span class="info-label">Tanggal Kembali</span>
-              <span class="info-val"><?= date('d M Y', strtotime($t->tanggal_kembali)) ?></span>
+              <span class="info-label">Jadwal Kembali</span>
+              <span class="info-val"><?= $fmt_tgl($t->tanggal_kembali) ?></span>
             </div>
             <?php if (!empty($t->tanggal_pengembalian)): ?>
             <div class="info-row">
               <span class="info-label">Dikembalikan</span>
-              <span class="info-val"><?= date('d M Y', strtotime($t->tanggal_pengembalian)) ?></span>
+              <span class="info-val"><?= $fmt_tgl($t->tanggal_pengembalian) ?></span>
+            </div>
+            <?php endif; ?>
+            <?php if ($t->is_luar_kota): ?>
+            <div class="info-row">
+              <span class="info-label">Lokasi</span>
+              <span class="info-val" style="color:var(--accent);">🗺 Luar Kota</span>
             </div>
             <?php endif; ?>
           </div>
@@ -297,24 +341,67 @@
                 <div class="timeline-label">Pesanan Dibuat</div>
                 <div class="timeline-desc">Menunggu konfirmasi admin</div>
               </div>
-              <div class="timeline-item <?= $t->status_rental >= 1 ? 'done' : '' ?>">
+              <div class="timeline-item <?= in_array($t->status_rental, ['aktif','selesai']) ? 'done' : '' ?>">
                 <div class="timeline-label">Disetujui Admin</div>
                 <div class="timeline-desc">Mobil siap diambil</div>
               </div>
-              <div class="timeline-item <?= $t->status_rental >= 2 ? 'done' : '' ?>">
+              <div class="timeline-item <?= $t->status_rental == 'selesai' ? 'done' : '' ?>">
                 <div class="timeline-label">Selesai</div>
                 <div class="timeline-desc">Mobil telah dikembalikan</div>
               </div>
             </div>
 
-            <!-- Tombol batal jika masih pending -->
-            <?php if ($t->status_rental == 0): ?>
+            <?php if ($t->status_rental == 'ditolak'): ?>
+            <div class="timeline-item done" style="margin-top:12px;">
+              <div class="timeline-label" style="color:#C05050;">Pesanan Ditolak/Dibatalkan</div>
+              <div class="timeline-desc">Admin menolak atau pesanan dibatalkan</div>
+            </div>
+            <?php endif; ?>
+
+            <?php if ($t->status_rental == 'pending'): ?>
             <button onclick="batalTransaksi(<?= $t->id_rental ?>)"
-                    style="width:100%;background:none;border:1.5px solid rgba(192,80,80,.3);border-radius:50px;padding:10px;font-size:.82rem;font-weight:600;color:#C05050;cursor:pointer;margin-top:16px;transition:all 0.2s;"
+                    style="width:100%;background:none;border:1.5px solid rgba(192,80,80,.3);
+                           border-radius:50px;padding:10px;font-size:.82rem;font-weight:600;
+                           color:#C05050;cursor:pointer;margin-top:16px;transition:all 0.2s;"
                     onmouseover="this.style.background='rgba(192,80,80,.08)'"
                     onmouseout="this.style.background='none'">
               <i class="fas fa-xmark me-1"></i> Batalkan Pesanan
             </button>
+            <?php endif; ?>
+
+            <?php if ($t->status_bayar == 2): ?>
+            <a href="<?= base_url('customer/transaksi/kwitansi/'.$t->id_rental) ?>"
+               target="_blank"
+               style="display:flex;align-items:center;justify-content:center;gap:6px;
+                      width:100%;background:rgba(122,200,140,.15);color:#3A8A50;
+                      border:1.5px solid rgba(122,200,140,.3);border-radius:50px;
+                      padding:10px;font-size:.82rem;font-weight:600;
+                      text-decoration:none;margin-top:10px;transition:all 0.2s;"
+               onmouseover="this.style.background='rgba(122,200,140,.25)'"
+               onmouseout="this.style.background='rgba(122,200,140,.15)'">
+              <i class="fas fa-print"></i> Cetak Kwitansi
+            </a>
+            <?php endif; ?>
+
+            <?php if ($t->status_rental == 'pending' && $t->status_bayar == 0 && $t->metode_bayar == 'transfer'): ?>
+            <a href="<?= base_url('customer/transaksi/bayar/'.$t->id_rental) ?>"
+               style="display:flex;align-items:center;justify-content:center;gap:6px;
+                      width:100%;background:var(--accent);color:#fff;
+                      border-radius:50px;padding:10px;font-size:.82rem;font-weight:600;
+                      text-decoration:none;margin-top:10px;transition:all 0.2s;">
+              <i class="fas fa-upload"></i> Upload Bukti Transfer
+            </a>
+            <?php endif; ?>
+
+            <?php if ($t->status_rental == 'pending' && $t->status_bayar == 0 && $t->metode_bayar == 'tunai'): ?>
+            <a href="<?= base_url('customer/transaksi/konfirmasi_tunai/'.$t->id_rental) ?>"
+               style="display:flex;align-items:center;justify-content:center;gap:6px;
+                      width:100%;background:rgba(212,134,106,.12);color:var(--accent);
+                      border:1.5px solid rgba(212,134,106,.3);border-radius:50px;
+                      padding:10px;font-size:.82rem;font-weight:600;
+                      text-decoration:none;margin-top:10px;transition:all 0.2s;">
+              <i class="fas fa-money-bill-wave"></i> Lihat Instruksi Bayar Tunai
+            </a>
             <?php endif; ?>
           </div>
         </div>

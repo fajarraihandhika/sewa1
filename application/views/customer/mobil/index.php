@@ -114,7 +114,6 @@
   }
   .pesan-mobil-name { font-family:var(--font-display); font-size:1rem; font-weight:700; color:var(--text-dark); }
   .pesan-mobil-meta { font-size:.8rem; color:var(--text-soft); }
-  .pesan-harga      { font-size:.9rem; font-weight:700; color:var(--accent); margin-top:3px; }
 
   .form-pesan-label {
     font-size:.74rem; font-weight:600; text-transform:uppercase;
@@ -131,6 +130,21 @@
     outline:none; border-color:var(--accent);
     background:var(--white); box-shadow:0 0 0 3px rgba(212,134,106,.1);
   }
+
+  /* Durasi option cards */
+  .durasi-cards { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:6px; }
+  .durasi-card {
+    border:1.5px solid var(--clay);
+    border-radius:var(--radius-md);
+    padding:10px 8px;
+    cursor:pointer; transition:all 0.2s;
+    text-align:center;
+    background:var(--sand);
+  }
+  .durasi-card.selected { border-color:var(--accent); background:rgba(212,134,106,.08); }
+  .durasi-card input[type=radio] { display:none; }
+  .durasi-card-label { font-size:.8rem; font-weight:600; color:var(--text-dark); }
+  .durasi-card-harga { font-size:.68rem; color:var(--accent); margin-top:3px; }
 
   .total-box {
     background: linear-gradient(135deg, rgba(212,134,106,.1), rgba(212,134,106,.05));
@@ -175,16 +189,17 @@
   .supir-avatar img { width:100%; height:100%; object-fit:cover; }
   .supir-name { font-size:.82rem; font-weight:600; color:var(--text-dark); }
   .supir-info { font-size:.72rem; color:var(--text-soft); }
-  .supir-tanpa {
-    grid-column:1/-1;
-    border:1.5px solid var(--clay);
+
+  /* Info box supir random */
+  .supir-random-info {
+    display:flex; align-items:center; gap:10px;
+    background:rgba(122,158,142,.08);
+    border:1px solid rgba(122,158,142,.2);
     border-radius:var(--radius-md);
-    padding:10px 14px;
-    cursor:pointer; transition:all 0.2s;
-    display:flex; align-items:center; gap:8px;
-    background:var(--sand); font-size:.82rem; color:var(--text-mid);
+    padding:12px 14px;
+    font-size:.82rem; color:var(--text-mid);
   }
-  .supir-tanpa.selected { border-color:var(--accent); background:rgba(212,134,106,.08); color:var(--accent); }
+  .supir-random-info i { color:var(--accent2); font-size:1rem; flex-shrink:0; }
 </style>
 
 <div class="mobil-wrap">
@@ -243,17 +258,23 @@
 </div>
 
 <script>
-const carsData   = <?= json_encode($mobil) ?>;
+const carsData        = <?= json_encode($mobil) ?>;
 const isPelangganLama = <?= $is_pelanggan_lama ? 'true' : 'false' ?>;
-const baseUrl    = '<?= base_url() ?>';
-const uploadUrl  = '<?= base_url("assets/upload/") ?>';
+const baseUrl         = '<?= base_url() ?>';
+const uploadUrl       = '<?= base_url("assets/upload/") ?>';
+
+// Simpan data mobil & supir yang sedang di-render di modal
+let _currentMobil = null;
+let _currentSupir = [];
 
 const typeBadgeMap = {
   SUV:'badge-suv', MPV:'badge-mpv', SDN:'badge-sedan',
   CITY:'badge-city', PREMIUM:'badge-premium', TRUK:'badge-truck', MINIBUS:'badge-minibus'
 };
 
-function formatRp(n) { return 'Rp ' + parseInt(n).toLocaleString('id-ID'); }
+function formatRp(n) {
+  return 'Rp ' + parseInt(n).toLocaleString('id-ID');
+}
 
 /* ===== RENDER GRID ===== */
 function renderMobil(data) {
@@ -279,8 +300,9 @@ function renderMobil(data) {
           <div class="mobil-spec"><i class="fas fa-car"></i>${c.kode_type}</div>
         </div>
         <div class="mobil-footer">
-          <div class="mobil-price">${formatRp(c.harga)}<span>/ hari</span></div>
-          <button class="btn-pesan" ${c.status == 0 ? 'disabled' : ''} onclick="event.stopPropagation(); bukaPesan(${c.id_mobil})">
+          <div class="mobil-price">${formatRp(c.harga_perhari)}<span>/ hari</span></div>
+          <button class="btn-pesan" ${c.status == 0 ? 'disabled' : ''}
+                  onclick="event.stopPropagation(); bukaPesan(${c.id_mobil})">
             ${c.status == 1 ? 'Pesan' : 'Tidak Tersedia'}
           </button>
         </div>
@@ -298,13 +320,14 @@ function filterMobil() {
     const mTipe   = !tipe   || c.kode_type == tipe;
     const mStatus = !status || String(c.status) == status;
     let   mHarga  = true;
-    if      (harga === 'low')  mHarga = parseInt(c.harga) <= 500000;
-    else if (harga === 'mid')  mHarga = parseInt(c.harga) > 500000 && parseInt(c.harga) <= 1000000;
-    else if (harga === 'high') mHarga = parseInt(c.harga) > 1000000;
+    if      (harga === 'low')  mHarga = parseInt(c.harga_perhari) <= 500000;
+    else if (harga === 'mid')  mHarga = parseInt(c.harga_perhari) > 500000 && parseInt(c.harga_perhari) <= 1000000;
+    else if (harga === 'high') mHarga = parseInt(c.harga_perhari) > 1000000;
     return mTipe && mStatus && mHarga;
   });
   renderMobil(filtered);
 }
+
 function resetFilter() {
   ['fTipe','fStatus','fHarga'].forEach(id => document.getElementById(id).value = '');
   renderMobil(carsData);
@@ -319,18 +342,24 @@ function bukaPesan(id) {
 
   fetch(baseUrl + 'customer/mobil/form_pesan/' + id)
     .then(r => r.json())
-    .then(d => renderFormPesan(d))
+    .then(d => {
+      _currentMobil = d.mobil;
+      _currentSupir = d.supir || [];
+      renderFormPesan(d);
+    })
     .catch(() => {
-      document.getElementById('modalPesanBody').innerHTML = '<p class="text-danger text-center py-3">Gagal memuat data.</p>';
+      document.getElementById('modalPesanBody').innerHTML =
+        '<p class="text-danger text-center py-3">Gagal memuat data.</p>';
     });
 }
 
 /* ===== RENDER FORM PESAN ===== */
 function renderFormPesan(d) {
-  const m = d.mobil;
-  const supirList = d.supir || [];
+  const m           = d.mobil;
+  const supirList   = d.supir || [];
   const isPelanggan = d.is_pelanggan_lama;
 
+  /* ── Supir Section ── */
   let supirSection = '';
   if (isPelanggan && supirList.length > 0) {
     const supirCards = supirList.map(s => `
@@ -342,48 +371,139 @@ function renderFormPesan(d) {
         <div>
           <div class="supir-name">${s.nama}</div>
           <div class="supir-info">⭐ ${s.rating || '5.0'} · ${s.pengalaman || 0} thn</div>
+          <div class="supir-info" style="color:var(--accent);">
+            ${formatRp(s.tarif_perhari)}/hari · ${formatRp(s.tarif_perjam)}/jam
+          </div>
         </div>
       </label>
     `).join('');
 
     supirSection = `
-      <div class="mb-3" style="margin-top:20px;">
-        <label class="form-pesan-label">Pilih Supir <span style="color:var(--text-soft);font-size:.7rem;">(Khusus Pelanggan Setia)</span></label>
+      <div style="margin-top:20px;">
+        <label class="form-pesan-label">
+          Pilih Supir
+          <span style="color:var(--text-soft);font-size:.7rem;font-weight:400;"> — Khusus Pelanggan Setia ⭐</span>
+        </label>
         <div class="supir-cards">
-          <label class="supir-tanpa selected" onclick="pilihSupir(this, '')">
+          <label class="supir-card selected" style="grid-column:1/-1;" onclick="pilihSupir(this, '')">
             <input type="radio" name="id_supir" value="" checked/>
-            <i class="fas fa-user-slash"></i> Tanpa Supir
+            <div class="supir-avatar" style="background:rgba(200,180,160,.2);">
+              <i class="fas fa-random" style="font-size:.8rem;"></i>
+            </div>
+            <div>
+              <div class="supir-name">Supir Otomatis</div>
+              <div class="supir-info">Kami pilihkan supir terbaik untuk Anda</div>
+            </div>
           </label>
           ${supirCards}
+        </div>
+      </div>
+    `;
+  } else {
+    // Pelanggan baru: tampilkan info saja
+    supirSection = `
+      <div style="margin-top:20px;">
+        <label class="form-pesan-label">Supir</label>
+        <div class="supir-random-info">
+          <i class="fas fa-user-tie"></i>
+          <div>Supir akan ditentukan otomatis oleh kami. Semua kendaraan sudah termasuk supir.</div>
         </div>
       </div>
     `;
   }
 
   document.getElementById('modalPesanBody').innerHTML = `
+
     <!-- Info Mobil -->
     <div class="pesan-mobil-info">
       <img src="${uploadUrl}${m.gambar}" alt="${m.merk}" class="pesan-mobil-img"/>
       <div>
         <div class="pesan-mobil-name">${m.merk}</div>
         <div class="pesan-mobil-meta">${m.warna} · ${m.tahun} · ${m.kode_type}</div>
-        <div class="pesan-harga">${formatRp(m.harga)} <span style="font-size:.75rem;font-weight:400;color:var(--text-soft)">/ hari</span></div>
+        <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:8px;">
+          <span style="font-size:.75rem;background:rgba(212,134,106,.1);color:var(--accent);padding:2px 10px;border-radius:50px;">
+            ${formatRp(m.harga_perjam)}/jam
+          </span>
+          <span style="font-size:.75rem;background:rgba(212,134,106,.1);color:var(--accent);padding:2px 10px;border-radius:50px;">
+            ${formatRp(m.harga_perhari)}/hari
+          </span>
+          <span style="font-size:.75rem;background:rgba(212,134,106,.1);color:var(--accent);padding:2px 10px;border-radius:50px;">
+            ${formatRp(m.harga_perminggu)}/minggu
+          </span>
+          <span style="font-size:.75rem;background:rgba(212,134,106,.1);color:var(--accent);padding:2px 10px;border-radius:50px;">
+            ${formatRp(m.harga_perbulan)}/bulan
+          </span>
+        </div>
       </div>
     </div>
 
-    <!-- Tanggal -->
+    <!-- Jenis Durasi -->
+    <div style="margin-bottom:16px;">
+      <label class="form-pesan-label">Jenis Sewa</label>
+      <div class="durasi-cards">
+        <label class="durasi-card selected" onclick="pilihDurasi(this, 'jam')">
+          <input type="radio" name="jenis_durasi" value="jam" checked/>
+          <div class="durasi-card-label">Per Jam</div>
+          <div class="durasi-card-harga">${formatRp(m.harga_perjam)}</div>
+        </label>
+        <label class="durasi-card" onclick="pilihDurasi(this, 'hari')">
+          <input type="radio" name="jenis_durasi" value="hari"/>
+          <div class="durasi-card-label">Per Hari</div>
+          <div class="durasi-card-harga">${formatRp(m.harga_perhari)}</div>
+        </label>
+        <label class="durasi-card" onclick="pilihDurasi(this, 'minggu')">
+          <input type="radio" name="jenis_durasi" value="minggu"/>
+          <div class="durasi-card-label">Per Minggu</div>
+          <div class="durasi-card-harga">${formatRp(m.harga_perminggu)}</div>
+        </label>
+        <label class="durasi-card" onclick="pilihDurasi(this, 'bulan')">
+          <input type="radio" name="jenis_durasi" value="bulan"/>
+          <div class="durasi-card-label">Per Bulan</div>
+          <div class="durasi-card-harga">${formatRp(m.harga_perbulan)}</div>
+        </label>
+      </div>
+      <!-- Info minimal jam -->
+      <div id="infoMinJam" style="font-size:.72rem;color:var(--accent);margin-top:6px;">
+        * Minimal 3 jam
+      </div>
+    </div>
+
+    <!-- Tanggal Mulai & Jumlah Durasi -->
     <div class="row g-3">
-      <div class="col-md-6">
-        <label class="form-pesan-label">Tanggal Sewa</label>
-        <input type="date" id="tglRental" class="form-pesan-input"
-               min="${new Date().toISOString().split('T')[0]}"
-               onchange="hitungTotal(${m.harga})" required/>
+      <div class="col-md-7">
+        <label class="form-pesan-label">Tanggal & Jam Mulai</label>
+        <input type="datetime-local" id="tanggalMulai" class="form-pesan-input"
+               min="${new Date().toISOString().slice(0,16)}"
+               onchange="hitungTotal()"/>
       </div>
-      <div class="col-md-6">
-        <label class="form-pesan-label">Tanggal Kembali</label>
-        <input type="date" id="tglKembali" class="form-pesan-input"
-               onchange="hitungTotal(${m.harga})" required/>
+      <div class="col-md-5">
+        <label class="form-pesan-label" id="labelJumlah">Jumlah Jam</label>
+        <input type="number" id="jumlahDurasi" class="form-pesan-input"
+               min="3" value="3" onchange="hitungTotal()" oninput="hitungTotal()"/>
       </div>
+    </div>
+
+    <!-- Selesai (readonly, dihitung otomatis) -->
+    <div style="margin-top:12px;">
+      <label class="form-pesan-label">Perkiraan Selesai</label>
+      <input type="text" id="tanggalSelesai" class="form-pesan-input"
+             readonly style="background:var(--clay);color:var(--text-mid);"
+             placeholder="Otomatis dihitung"/>
+    </div>
+
+    <!-- Luar Kota -->
+    <div style="margin-top:16px;">
+      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:12px;
+                    background:var(--sand);border-radius:var(--radius-md);border:1.5px solid var(--clay);">
+        <input type="checkbox" id="checkLuarKota" style="margin-top:3px;accent-color:var(--accent);"
+               onchange="hitungTotal()"/>
+        <div>
+          <div style="font-size:.85rem;font-weight:600;color:var(--text-dark);">Lokasi di Luar Kota</div>
+          <div style="font-size:.75rem;color:var(--text-soft);margin-top:2px;">
+            Dikenakan biaya tambahan <strong style="color:var(--accent);">+20%</strong> dari total harga
+          </div>
+        </div>
+      </label>
     </div>
 
     ${supirSection}
@@ -392,86 +512,177 @@ function renderFormPesan(d) {
     <div style="margin-top:16px;">
       <label class="form-pesan-label">Catatan (opsional)</label>
       <textarea id="catatanPesan" class="form-pesan-input" rows="2"
-                placeholder="Misal: antar ke bandara, butuh kursi bayi, dll."></textarea>
+                placeholder="Misal: butuh kursi bayi, antar ke pintu tol, dll."></textarea>
     </div>
 
     <!-- Total -->
-    <div class="total-box">
+    <div class="total-box" id="totalBox">
       <div>
         <div class="total-label">Estimasi Total</div>
-        <div class="total-durasi" id="totalDurasi">Pilih tanggal terlebih dahulu</div>
+        <div class="total-durasi" id="totalDurasi">Isi data di atas terlebih dahulu</div>
       </div>
       <div class="total-harga" id="totalHarga">–</div>
     </div>
 
+    <!-- Rincian -->
+    <div id="rincianBox" style="display:none;font-size:.78rem;color:var(--text-soft);margin-top:8px;padding:0 4px;">
+      <div id="rincianText"></div>
+    </div>
+
     <!-- Submit -->
     <button class="btn-submit-pesan" id="btnSubmitPesan" onclick="submitPesan(${m.id_mobil})">
-      <i class="fas fa-check-circle"></i> Konfirmasi Pemesanan
+      <i class="fas fa-check-circle"></i> Lanjut ke Pembayaran
     </button>
   `;
 }
 
-/* ===== PILIH SUPIR ===== */
-function pilihSupir(el, id) {
-  document.querySelectorAll('.supir-card, .supir-tanpa').forEach(c => c.classList.remove('selected'));
+/* ===== PILIH JENIS DURASI ===== */
+function pilihDurasi(el, jenis) {
+  document.querySelectorAll('.durasi-card').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
   el.querySelector('input[type=radio]').checked = true;
+
+  // Update label jumlah & min value
+  const labelMap = { jam: 'Jumlah Jam', hari: 'Jumlah Hari', minggu: 'Jumlah Minggu', bulan: 'Jumlah Bulan' };
+  const minMap   = { jam: 3, hari: 1, minggu: 1, bulan: 1 };
+  document.getElementById('labelJumlah').innerText   = labelMap[jenis];
+  document.getElementById('jumlahDurasi').min        = minMap[jenis];
+  document.getElementById('jumlahDurasi').value      = minMap[jenis];
+  document.getElementById('infoMinJam').style.display = jenis === 'jam' ? 'block' : 'none';
+
+  hitungTotal();
+}
+
+/* ===== PILIH SUPIR ===== */
+function pilihSupir(el, id) {
+  document.querySelectorAll('.supir-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  el.querySelector('input[type=radio]').checked = true;
+  hitungTotal();
 }
 
 /* ===== HITUNG TOTAL ===== */
-function hitungTotal(hargaPerHari) {
-  const tgl1 = document.getElementById('tglRental').value;
-  const tgl2 = document.getElementById('tglKembali').value;
-  if (!tgl1 || !tgl2 || tgl2 <= tgl1) {
-    document.getElementById('totalHarga').innerText = '–';
-    document.getElementById('totalDurasi').innerText = 'Pilih tanggal yang valid';
+function hitungTotal() {
+  const m           = _currentMobil;
+  const jenisEl     = document.querySelector('input[name="jenis_durasi"]:checked');
+  const jumlah      = parseInt(document.getElementById('jumlahDurasi')?.value) || 0;
+  const tglMulai    = document.getElementById('tanggalMulai')?.value;
+  const luarKota    = document.getElementById('checkLuarKota')?.checked;
+
+  if (!m || !jenisEl || jumlah < 1 || !tglMulai) {
+    document.getElementById('totalHarga').innerText  = '–';
+    document.getElementById('totalDurasi').innerText = 'Isi data di atas terlebih dahulu';
+    document.getElementById('rincianBox').style.display = 'none';
     return;
   }
-  const hari = Math.ceil((new Date(tgl2) - new Date(tgl1)) / 86400000);
-  const supirDipilih = document.querySelector('input[name="id_supir"]:checked');
-  const pakaSupir    = supirDipilih && supirDipilih.value !== '';
-  const total        = (hargaPerHari * hari) + (pakaSupir ? 150000 * hari : 0);
+
+  const jenis = jenisEl.value;
+
+  // Validasi minimal jam
+  if (jenis === 'jam' && jumlah < 3) {
+    document.getElementById('totalDurasi').innerText = '⚠ Minimal 3 jam';
+    document.getElementById('totalHarga').innerText  = '–';
+    return;
+  }
+
+  // Hitung tanggal selesai
+  const tsM = new Date(tglMulai);
+  let tsS   = new Date(tglMulai);
+  if      (jenis === 'jam')    tsS.setHours(tsS.getHours() + jumlah);
+  else if (jenis === 'hari')   tsS.setDate(tsS.getDate() + jumlah);
+  else if (jenis === 'minggu') tsS.setDate(tsS.getDate() + jumlah * 7);
+  else if (jenis === 'bulan')  tsS.setMonth(tsS.getMonth() + jumlah);
+
+  // Tampilkan perkiraan selesai
+  document.getElementById('tanggalSelesai').value =
+    tsS.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+
+  // Harga satuan mobil
+  const hargaMap = {
+    jam:    parseFloat(m.harga_perjam),
+    hari:   parseFloat(m.harga_perhari),
+    minggu: parseFloat(m.harga_perminggu),
+    bulan:  parseFloat(m.harga_perbulan),
+  };
+  const hargaSatuan = hargaMap[jenis];
+  const biayaMobil  = hargaSatuan * jumlah;
+
+  // Biaya supir
+  let biayaSupir = 0;
+  const supirEl  = document.querySelector('input[name="id_supir"]:checked');
+  if (supirEl && supirEl.value !== '') {
+    const supirData = _currentSupir.find(s => s.id_supir == supirEl.value);
+    if (supirData) {
+      const tarifSupir = jenis === 'jam'
+        ? parseFloat(supirData.tarif_perjam)
+        : parseFloat(supirData.tarif_perhari);
+      biayaSupir = tarifSupir * jumlah;
+    }
+  }
+
+  const subtotal       = biayaMobil + biayaSupir;
+  const biayaLuarKota  = luarKota ? Math.round(subtotal * 0.20) : 0;
+  const total          = subtotal + biayaLuarKota;
+
+  // Tampilkan
+  const satuanLabel = { jam:'jam', hari:'hari', minggu:'minggu', bulan:'bulan' };
   document.getElementById('totalHarga').innerText  = formatRp(total);
-  document.getElementById('totalDurasi').innerText = `${hari} hari` + (pakaSupir ? ' + biaya supir' : '');
+  document.getElementById('totalDurasi').innerText = `${jumlah} ${satuanLabel[jenis]}`;
+
+  let rincian = `Mobil: ${formatRp(hargaSatuan)} × ${jumlah} ${satuanLabel[jenis]} = ${formatRp(biayaMobil)}`;
+  if (biayaSupir > 0) rincian += ` · Supir: ${formatRp(biayaSupir)}`;
+  if (biayaLuarKota > 0) rincian += ` · Luar Kota (+20%): ${formatRp(biayaLuarKota)}`;
+  document.getElementById('rincianText').innerText    = rincian;
+  document.getElementById('rincianBox').style.display = 'block';
 }
 
 /* ===== SUBMIT PESAN ===== */
 function submitPesan(id_mobil) {
-  const btn        = document.getElementById('btnSubmitPesan');
-  const tglRental  = document.getElementById('tglRental').value;
-  const tglKembali = document.getElementById('tglKembali').value;
-  const catatan    = document.getElementById('catatanPesan').value;
-  const supirEl    = document.querySelector('input[name="id_supir"]:checked');
-  const id_supir   = supirEl ? supirEl.value : '';
+  const btn          = document.getElementById('btnSubmitPesan');
+  const jenisEl      = document.querySelector('input[name="jenis_durasi"]:checked');
+  const jumlah       = parseInt(document.getElementById('jumlahDurasi').value);
+  const tglMulai     = document.getElementById('tanggalMulai').value;
+  const luarKota     = document.getElementById('checkLuarKota')?.checked ? 1 : 0;
+  const catatan      = document.getElementById('catatanPesan').value;
+  const supirEl      = document.querySelector('input[name="id_supir"]:checked');
+  const id_supir     = supirEl ? supirEl.value : '';
 
-  if (!tglRental || !tglKembali) {
-    alert('Lengkapi tanggal sewa dan kembali!'); return;
+  if (!jenisEl || !jumlah || !tglMulai) {
+    alert('Lengkapi semua data pemesanan!'); return;
+  }
+  if (jenisEl.value === 'jam' && jumlah < 3) {
+    alert('Sewa per jam minimal 3 jam!'); return;
   }
 
-  btn.disabled = true;
+  btn.disabled  = true;
   btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
 
   const formData = new FormData();
-  formData.append('id_mobil', id_mobil);
-  formData.append('tanggal_rental', tglRental);
-  formData.append('tanggal_kembali', tglKembali);
-  formData.append('id_supir', id_supir);
-  formData.append('catatan', catatan);
+  formData.append('id_mobil',       id_mobil);
+  formData.append('jenis_durasi',   jenisEl.value);
+  formData.append('jumlah_durasi',  jumlah);
+  formData.append('tanggal_mulai',  tglMulai);
+  formData.append('id_supir',       id_supir);
+  formData.append('is_luar_kota',   luarKota);
+  formData.append('catatan',        catatan);
 
-  fetch(baseUrl + 'customer/mobil/pesan', {
-    method: 'POST', body: formData
-  })
-  .then(r => r.json())
-  .then(d => {
-    if (d.status === 'success') {
-      bootstrap.Modal.getInstance(document.getElementById('modalPesan')).hide();
-      setTimeout(() => window.location.href = d.redirect, 300);
-    } else {
-      alert(d.message);
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fas fa-check-circle"></i> Konfirmasi Pemesanan';
-    }
-  });
+  fetch(baseUrl + 'customer/mobil/pesan', { method: 'POST', body: formData })
+    .then(r => r.json())
+    .then(d => {
+      if (d.status === 'success') {
+        bootstrap.Modal.getInstance(document.getElementById('modalPesan')).hide();
+        setTimeout(() => window.location.href = d.redirect, 300);
+      } else {
+        alert(d.message);
+        btn.disabled  = false;
+        btn.innerHTML = '<i class="fas fa-check-circle"></i> Lanjut ke Pembayaran';
+      }
+    })
+    .catch(() => {
+      alert('Terjadi kesalahan. Coba lagi.');
+      btn.disabled  = false;
+      btn.innerHTML = '<i class="fas fa-check-circle"></i> Lanjut ke Pembayaran';
+    });
 }
 
 /* ===== INIT ===== */
